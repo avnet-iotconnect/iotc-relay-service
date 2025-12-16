@@ -12,18 +12,13 @@
 # 1. Introduction
 
 This guide will walk you through how to enable the /IOTCONNECT Relay Service on a supported device 
-to transmit and receive data to/from any type of customer process via Unix socket. This allows any user 
+to transmit and receive data to/from any Python process via Unix socket. This allows any user 
 to report data from their existing applications to /IOTCONNECT and receive cloud commands from /IOTCONNECT 
 while mkaing minimal modifications.
 
 This guide also includes a working example Python application (to resemble a user application) and detailed 
 instructions on the necessary modifications connect it to the /IOTCONNECT service to enable telemetry reporting 
 and cloud-command handling.
-
-> [!NOTE]
-> Your application *does not need to be written in Python* to be compatible with the Relay service. It can
-> be in **any language** you need it to be as long as it can read/write a local JSON file. The example given in this guide
-> is in Python simply because it is one of the most common languages used.
 
 After following this guide you should be able to connect your own custom application to /IOTCONNECT with ease!
 
