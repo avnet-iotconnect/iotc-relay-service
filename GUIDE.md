@@ -2,22 +2,22 @@
 
 1. [Introduction](#1-introduction)
 2. [Device Setup](#2-device-setup)
-3. [Add the Relay Python App to Your Device](#3-add-the-relay-python-app-to-your-device)
+3. [Download the /IOTCONNECT Relay Server and Client Code](#3-download-the-iotconnect-relay-server-and-client-code)
 4. [Modifications to User Applications](#4-modifications-to-user-applications)
 5. [Update Device Template](#5-update-device-template)
-6. [Set Up the /IOTCONNECT Relay Service](#6-set-up-the-iotconnect-relay-service)
+6. [Set Up the /IOTCONNECT Relay Service to Run On Boot](#6-set-up-the-iotconnect-relay-service-to-run-on-boot)
 7. [Using the /IOTCONNECT Relay Service with User Applications](#7-using-the-iotconnect-relay-service-with-user-applications)
 8. [Resources](#8-resources)
 
 # 1. Introduction
 
 This guide will walk you through how to enable the /IOTCONNECT Relay Service on a supported device 
-to transmit and receive data to/from any Python process via Unix socket. This allows any user 
+to transmit and receive data to/from any Python or C process via Unix socket. This allows any user 
 to report data from their existing applications to /IOTCONNECT and receive cloud commands from /IOTCONNECT 
-while mkaing minimal modifications.
+while making minimal modifications.
 
-This guide also includes a working example Python application (to resemble a user application) and detailed 
-instructions on the necessary modifications connect it to the /IOTCONNECT service to enable telemetry reporting 
+This guide also includes working example Python and C applications (to resemble user applications) and detailed 
+instructions on the necessary modifications for connecting it to the /IOTCONNECT service to enable telemetry reporting 
 and cloud-command handling.
 
 After following this guide you should be able to connect your own custom application to /IOTCONNECT with ease!
@@ -32,32 +32,76 @@ This will walk users through how to set up hardware, configure the software, and
 > [!NOTE]
 >  Since these steps can differ board-to-board it is important to look at the Quickstart **for your specific device.**
 
-# 3. Add the /IOTCONNECT Relay Server and Client Code to Your Device
+# 3. Download the /IOTCONNECT Relay Server and Client Code
 
-Download the /IOTCONNECT Relay Server application and Client module using these commands in the console:
+First download the /IOTCONNECT Relay Server application using this commands in the console:
 
 ```
 wget -O /home/weston/demo/iotc-relay-server.py https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/main/relay-server/iotc-relay-server.py
-wget -O /home/weston/demo/iotc_relay_client.py https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/main/client-module/iotc_relay_client.py
 ```
+
 > [!NOTE]
-> You can download these to a different directory but **ensure that you update the locations of these files in all
-> other references to them.**
+> This same Python server script will be used regardless of if the customer application is Python-based or not. Using 
+> Unix sockets allows it to communicate with both Python and C programs.
+
+Next, download the appropriate client module code for your application(s).
+
+## Python Applications
+
+For Python applications, download the Python client module using this console command: 
+
+> [!NOTE]
+> You can download the module to a different directory but **ensure that you update the locations in all
+> other references to it.**
+
+```
+wget -O /home/weston/demo/iotc_relay_client.py https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/main/client-module/python/iotc_relay_client.py
+```
+
+## C Applications
+
+For C applications, download the C client module, header file, and Makefile using these commands:
+
+> [!IMPORTANT]
+> In each command, users should replace `<USER APPLICATION DIRECTORY>` with the local directory where the custom user 
+> application is stored. This makes compilation less complex.
+
+```
+wget -O <USER APPLICATION DIRECTORY>/iotc_relay_client.c https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/main/client-module/c/iotc_relay_client.c
+```
+```
+wget -O <USER APPLICATION DIRECTORY>/iotc_relay_client.h https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/main/client-module/c/iotc_relay_client.h
+```
 
 # 4. Modifications to User Applications
 
 > [!NOTE]
-> For your convenience, if you just wish to test out the Relay functionality you can download a ready-to-use
-> example custom client application with this command:
+> For your convenience, if you just wish to test out the Relay functionality you can download 1 or more ready-to-use
+> example custom client applications with these commands:
+> 
+> Python application that generates random positive integers and selects random color strings:
 > ```
-> wget https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/refs/heads/main/client-examples/client-example-0.py
+> wget https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/refs/heads/main/client-app-examples/python/client-example-0.py
 > ```
-> If you wish to test with multiple client applications running at once, you can download a similar second ready-to-use
-> example client (generates negative numbers and random weather-descriptive strings) with this command:
+> 
+> Python application that generates random negative integers and selects random weather strings:
 > ```
-> wget https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/refs/heads/main/client-examples/client-example-1.py
+> wget https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/refs/heads/main/client-app-examples/python/client-example-1.py
 > ```
-> Step 4 walks you through how to create client-example-0.py yourself, so if you downloaded it you can skip to [Step 5](#5-update-device-template).
+> 
+> C application that generates random positive decimal numbers between 0 and 1 and selects random animal strings:
+> ```
+> wget https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/refs/heads/main/client-app-examples/c/client-example-2.c
+> ```
+> 
+> C application that generates random negative decimal numbers between -1 and 0 and selects random name strings:
+> ```
+> wget https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/refs/heads/main/client-app-examples/c/client-example-3.c
+> ```
+> 
+> Step 4 walks you through how to create an application like these yourself, so if you downloaded it you can skip to [Step 5](#5-update-device-template).
+
+## Python Applications
 
 Here is a basic Python script that can represent an existing user application:
 
@@ -105,8 +149,8 @@ SOCKET_PATH = "/tmp/iotconnect-relay.sock"
 CLIENT_ID = "random_data_generator"
 ```
 
-The next addition is going to be a handler function for acting upon the received cloud commands from the server. A basic version 
-of this could be:
+The next addition is going to be a handler function for acting upon the received cloud commands from the server. A basic 
+version of this could be:
 
 ```
 def handle_cloud_command(command_name, command_parameters): 
@@ -124,7 +168,8 @@ def handle_cloud_command(command_name, command_parameters):
 > The cloud command handler should always expect to receive a string "command_name" (basic command name called) and a string
 > "command_parameters" (space-separated parameters).
 
-The final modifications are going to be in the main loop of the application to initialize connection and then utilize the socket:
+The final modifications are going to be in the main loop of the application to initialize connection and then utilize the 
+socket:
 
 ```
 def main():
@@ -217,8 +262,255 @@ if __name__ == "__main__":
 ```
 
 > [!IMPORTANT]
-> If you are using multiple clients on your device to report data to the server, **ensure that they do not use the same
-> data variable names as each other.** Some of the data could be overwritten and lost.
+> If you are using multiple clients on your device to report data to the server, **ensure that they do not use the same 
+> telemetry data variable names as each other.** Some of the data could be overwritten and lost.
+
+## C Applications
+
+Here is a basic C program that can represent an existing user application:
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
+#include <time.h>
+
+static const char *ANIMALS[] = {
+    "dog", "cat", "bear", "fish", 
+    "bird", "snake", "turtle", "rabbit"
+};
+#define NUM_ANIMALS (sizeof(ANIMALS) / sizeof(ANIMALS[0]))
+
+static void generate_random_data(float *number_decimal, const char **animal)
+{
+    *number_decimal = (float)(rand() % 101) / 100.0f;
+    *animal = ANIMALS[rand() % NUM_ANIMALS];
+}
+
+int main(void)
+{
+    float number_decimal;
+    const char *animal;
+    
+    srand(time(NULL));
+    
+    while (1) {
+        generate_random_data(&number_decimal, &animal);
+        printf("Number: %.2f, Animal: %s\n", number_decimal, animal);
+        sleep(5);
+    }
+    
+    return 0;
+}
+```
+
+The first addition users need to make is including the relay client header and adding basic configuration:
+```
+#include "iotc_relay_client.h"
+
+#define SOCKET_PATH "/tmp/iotconnect-relay.sock"
+#define CLIENT_ID "c_data_generator"
+```
+
+The next addition is a handler function for acting upon received cloud commands from the server. A basic version of this 
+could be:
+```
+static void handle_cloud_command(
+    const char *command_name,
+    const char *command_parameters,
+    void *user_data)
+{
+    (void)user_data;
+    
+    printf("Command received: %s\n", command_name);
+    
+    if (strcmp(command_name, "Command_A") == 0) {
+        printf("Executing protocol for Command_A with parameters: %s\n", 
+               command_parameters);
+    } else if (strcmp(command_name, "Command_B") == 0) {
+        printf("Executing protocol for Command_B with parameters: %s\n", 
+               command_parameters);
+    } else {
+        printf("Command not recognized: %s\n", command_name);
+    }
+}
+```
+
+> [!TIP]
+> The cloud command handler receives three parameters: `command_name` (command name string), `command_parameters` 
+> (space-separated parameters string), and `user_data` (optional user context pointer which can be NULL).
+
+The final modifications are in the main function to add signal handling, initialize the client connection, and send telemetry:
+```
+static IotcRelayClient *g_client = NULL;
+
+static void signal_handler(int signum)
+{
+    (void)signum;
+    printf("\nExiting gracefully...\n");
+    if (g_client) {
+        iotc_relay_client_stop(g_client);
+        iotc_relay_client_destroy(g_client);
+    }
+    exit(0);
+}
+
+int main(void)
+{
+    int ret;
+    float number_decimal;
+    const char *animal;
+    char json_buffer[256];
+    
+    srand(time(NULL));
+    signal(SIGINT, signal_handler);
+    
+    /* Initialize and start client */
+    g_client = iotc_relay_client_create(
+        SOCKET_PATH,
+        CLIENT_ID,
+        handle_cloud_command,
+        NULL
+    );
+    
+    if (!g_client) {
+        fprintf(stderr, "Failed to create client\n");
+        return 1;
+    }
+    
+    iotc_relay_client_start(g_client);
+    
+    while (1) {
+        generate_random_data(&number_decimal, &animal);
+        printf("Number: %.2f, Animal: %s\n", number_decimal, animal);
+        
+        /* Send telemetry if connected */
+        if (iotc_relay_client_is_connected(g_client)) {
+            snprintf(json_buffer, sizeof(json_buffer),
+                     "{\"random_number_decimal\":%.2f,\"random_animal\":\"%s\"}",
+                     number_decimal, animal);
+            
+            iotc_relay_client_send_telemetry(g_client, json_buffer);
+        }
+        
+        sleep(5);
+    }
+    
+    return 0;
+}
+```
+
+Altogether, the /IOTCONNECT Relay-compatible version of the example program would be:
+```
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <signal.h>
+#include <time.h>
+#include "iotc_relay_client.h"
+
+#define SOCKET_PATH "/tmp/iotconnect-relay.sock"
+#define CLIENT_ID "c_data_generator"
+
+static const char *ANIMALS[] = {
+    "dog", "cat", "bear", "fish", 
+    "bird", "snake", "turtle", "rabbit"
+};
+#define NUM_ANIMALS (sizeof(ANIMALS) / sizeof(ANIMALS[0]))
+
+static IotcRelayClient *g_client = NULL;
+
+static void signal_handler(int signum)
+{
+    (void)signum;
+    printf("\nExiting gracefully...\n");
+    if (g_client) {
+        iotc_relay_client_stop(g_client);
+        iotc_relay_client_destroy(g_client);
+    }
+    exit(0);
+}
+
+static void handle_cloud_command(
+    const char *command_name,
+    const char *command_parameters,
+    void *user_data)
+{
+    (void)user_data;
+    
+    printf("Command received: %s\n", command_name);
+    
+    if (strcmp(command_name, "Command_A") == 0) {
+        printf("Executing protocol for Command_A with parameters: %s\n", 
+               command_parameters);
+    } else if (strcmp(command_name, "Command_B") == 0) {
+        printf("Executing protocol for Command_B with parameters: %s\n", 
+               command_parameters);
+    } else {
+        printf("Command not recognized: %s\n", command_name);
+    }
+}
+
+static void generate_random_data(float *number_decimal, const char **animal)
+{
+    *number_decimal = (float)(rand() % 101) / 100.0f;
+    *animal = ANIMALS[rand() % NUM_ANIMALS];
+}
+
+int main(void)
+{
+    int ret;
+    float number_decimal;
+    const char *animal;
+    char json_buffer[256];
+    
+    srand(time(NULL));
+    signal(SIGINT, signal_handler);
+    
+    g_client = iotc_relay_client_create(
+        SOCKET_PATH,
+        CLIENT_ID,
+        handle_cloud_command,
+        NULL
+    );
+    
+    if (!g_client) {
+        fprintf(stderr, "Failed to create client\n");
+        return 1;
+    }
+    
+    iotc_relay_client_start(g_client);
+    
+    while (1) {
+        generate_random_data(&number_decimal, &animal);
+        printf("Number: %.2f, Animal: %s\n", number_decimal, animal);
+        
+        if (iotc_relay_client_is_connected(g_client)) {
+            snprintf(json_buffer, sizeof(json_buffer),
+                     "{\"random_number_decimal\":%.2f,\"random_animal\":\"%s\"}",
+                     number_decimal, animal);
+            
+            iotc_relay_client_send_telemetry(g_client, json_buffer);
+        }
+        
+        sleep(5);
+    }
+    
+    return 0;
+}
+```
+
+> [!IMPORTANT]
+> Telemetry data must be formatted as a JSON string. Use `snprintf()` to create properly formatted JSON with your data 
+> values before calling `iotc_relay_client_send_telemetry()`.
+
+> [!IMPORTANT]
+> If you are using multiple clients on your device to report data to the server, **ensure that they do not use the same 
+> telemetry data variable names as each other.** Some of the data could be overwritten and lost.
+
+After creating your modified C application(s), modify your Makefile(s) or compilation command(s) to include the `iotc_relay_client.c` 
+module, and then recompile.
 
 # 5. Update Device Template
 
@@ -228,58 +520,62 @@ will need to be updated.
 To create a new template, log into your /IOTCONNECT account at https://console.iotconnect.io/login and then in the blue 
 vertical toolbar on the left side of the page, hover over the processor icon and then click "Device" in the resulting dropdown.
 
-<img src="./media/device-page.png">
+<img src="./media/device-page.png" alt="">
 
 Now in the Devices page, in the blue horizontal toolbar at the bottom of the screen click on the "Templates" button.
 
-<img src="./media/templates-button.png">
+<img src="./media/templates-button.png" alt="">
 
 In the Templates page, click on the blue "Create Template" button in the top-right corner.
 
-<img src="./media/create-template-button.png">
+<img src="./media/create-template-button.png" alt="">
 
-Fill in the Template Code and Template Name fields with your desired alpha-numeric values (must start with a letter), and leave the 
-Authentication Type and Device Message Version on their default values. Then click "Save".
+Fill in the Template Code and Template Name fields with your desired alphanumeric values (must start with a letter), and 
+leave the Authentication Type and Device Message Version on their default values. Then click "Save".
 
 > [!TIP]
 > For simplicity we recommend making the Template Code and Template Name the same values.
 
 In the resulting page, you can add your data attributes, cloud commands, and adjust your data frequency.
 
-If your Data Frequency is not set to 5 by default, it is recommended to change it to 5 since that is the frequency that the Handoff 
-application expects by default.
+If your Data Frequency is not set to 5 by default, it is recommended to change it to 5 since that is the frequency that 
+the Handoff application expects by default.
 
 > [!NOTE]
-> If the /IOTCONNECT UI says you cannot set the Data Frequency as low as you would like, submit a support ticket (bottom of the vertical
-> toolbar on the left edge of the page) requesting the value be changed to 5 for that template.
+> If the /IOTCONNECT UI says you cannot set the Data Frequency as low as you would like, submit a support ticket (bottom 
+> of the vertical toolbar on the left edge of the page) requesting the value be changed to 5 for that template.
 
 To add Attributes (data fields) to your template, click on the "Attributes" tab.
 
-<img src="./media/attributes-tab.png">
+<img src="./media/attributes-tab.png" alt="">
 
-Populate the "Local Name" with the exact key name you used for that data field to send it to the Relay server. For the example script from above,
-the Local Names for the 2 attributes would be `random_color` and `random_number`.
+Populate the "Local Name" with the exact key name you used for that data field to send it to the Relay server. For the 
+first Python example script from above, the Local Names for the 2 attributes would be `random_color` and `random_number`.
 
 > [!NOTE]
-> If using client-example-1.py in addition to client-example-0.py, add `random_weather` and `random_number_neg` to the template attributes as well.
+> If using multiple clients, add the attributes for all data fields being sent. Remember that re-using the same attribute 
+> names across multiple clients is not recommended because the server will only relay the latest value for each attribute 
+> during each telemetry report. Re-using names will result in lost data due to over-writing.
 
-Use the "Data Type" dropdown and select the type that matches the data being reported. For the example script from above,
-the Data Type for `random_color` would be STRING and the Data Type for `random_number` would be INTEGER.
+Use the "Data Type" dropdown and select the type that matches the data being reported. For the first Python example 
+script from above, the Data Type for `random_color` would be STRING and the Data Type for `random_number` would be INTEGER.
 
 > [!TIP]
-> For any non-whole number data (not including GPS coordinates, use LATLONG for those), it is recommended that the DECIMAL data type be used.
+> For any non-whole number data (not including GPS coordinates, use LATLONG for those), it is recommended that the 
+> DECIMAL data type be used.
 
-If you are reporting data objects, you can use the OBJECT data type and then add member-attributes of specific types within that object. 
+If you are reporting data objects, you can use the OBJECT data type and then add member-attributes of specific types 
+within that object. 
 
 > [!IMPORTANT]
-> Ensure that the Local Names are **identical** to the key names used for sending the data to the Relay server, as no modifications to the data
-> are made by the Relay server.
+> Ensure that the Local Names are **identical** to the key names used for sending the data to the Relay server, as no 
+> modifications to the data are made by the Relay server.
 
 After an attribute is configured, click the "Save" button to add it to the template.
 
 To add Cloud Commands, click on the "Commands" tab.
 
-<img src="./media/commands-tab.png">
+<img src="./media/commands-tab.png" alt="">
 
 Fill in the "Command Name" and "Command" fields with the values your command handler 
 expects to receive for the "command_name" key.
@@ -306,7 +602,7 @@ of /IOTCONNECT and then click on your specific device name to be taken to your d
 
 In your device's page, click on the pen-and-paper icon next to the "Template" selection.
 
-<img src="./media/edit-template.png">
+<img src="./media/edit-template.png" alt="">
 
 In the resulting drop-down, select the name of the new template you just created and that new 
 template will instantly be assigned to your device.
@@ -362,7 +658,7 @@ sudo systemctl start iotconnect-relay.service
 ```
 
 > [!TIP]
-> Here are some console commands that can be useful for manaing, debugging, and monitoring the /IOTCONNECT
+> Here are some console commands that can be useful for managing, debugging, and monitoring the /IOTCONNECT
 > Relay Service:
 > 
 > Check if the service is running

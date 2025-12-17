@@ -1,11 +1,16 @@
 # Introduction
-This repository contains a modified [/IOTCONNECT Python Lite SDK](https://github.com/avnet-iotconnect/iotc-python-lite-sdk) application designed to receive data from **any type of user application** via Unix socket which it can then transmit to /IOTCONNECT as telemetry. Additionally, the /IOTCONNECT Relay can receive commands from the cloud and hand them off to your application(s) via Uix socket.
+This repository contains a modified [/IOTCONNECT Python Lite SDK](https://github.com/avnet-iotconnect/iotc-python-lite-sdk) application designed to receive data from **both 
+Python and C applications** via Unix socket which it can then transmit to /IOTCONNECT as telemetry. Additionally, the 
+/IOTCONNECT Relay can receive commands from the cloud and hand them off to your application(s) via Uix socket.
 
-This framework allows users to make **minimal modifications to their existing application(s)** while still reaping the full benefits of the /IOTCONNECT platform, and also allows multiple processes to report data to a single /IOTCONNECT cloud connection.
+This framework allows users to make **minimal modifications to their existing application(s)** while still reaping the 
+full benefits of the /IOTCONNECT platform, and also allows multiple processes to report data to a single /IOTCONNECT 
+cloud connection.
 
-The /IOTCONNECT Relay Server application is intended to be run as a service on a device and handles all cloud communication for a user's custom application.
+The /IOTCONNECT Relay Server application is intended to be run as a service on a device and handles all cloud communication 
+for a user's custom application.
 
-For the the comprehensive guide through setting up any supported device with the Relay Service, see [GUIDE.md](GUIDE.md).
+For the comprehensive guide through setting up any supported device with the Relay Service, see [GUIDE.md](GUIDE.md).
 
 # Verified Development Boards
 
@@ -40,11 +45,6 @@ Relay application.
 
 [The /IOTCONNECT Relay Service guide](GUIDE.md) will refer you to your board's Quickstart for the device setup and onboarding 
 process if you do not wish to do those at this time, as it is a mandatory step for all supported boards.
-
-# AWS Greengrass Demos Enablement
-
-To explore setting up AWS Greengrass Lite on some of these same devices and deploying python demos through pre-built or custom
-components, check out the [/IOTCONNECT Python Greengrass Demos repo](https://github.com/avnet-iotconnect/iotc-python-greengrass-demos/tree/main).
 
 ## Licensing
 
