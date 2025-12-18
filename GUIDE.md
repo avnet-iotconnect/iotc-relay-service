@@ -646,6 +646,16 @@ WantedBy=multi-user.target
 > Make sure to modify the `User` field to a valid non-root user on your device, and to modify the
 > working directory and exec start fields to the directory where iotc-relay-server.py is located
 > on your device.
+>
+> You will need to give your user ownership of the /IOTCONNECT config file and certificates if you
+> were logged in as `root` during the initial QuickStart. Do so with this command (modify `<user>` and `<group>`):
+> ```
+> sudo chown <user>:<group> /home/weston/demo/device-cert.pem /home/weston/demo/device-pkey.pem /home/weston/demo/iotcDeviceConfig.json
+> ```
+> For example on a device that uses a `weston` user in the `weston` group, use this command:
+> ```
+> sudo chown weston:weston /home/weston/demo/device-cert.pem /home/weston/demo/device-pkey.pem /home/weston/demo/iotcDeviceConfig.json
+> ```
 
 > [!TIP]
 > It is recommended to not use `root` as the user for the service to avoid any permissions errors
