@@ -37,7 +37,7 @@ This will walk users through how to set up hardware, configure the software, and
 First download the /IOTCONNECT Relay Server application using this commands in the console:
 
 ```
-wget -O /home/weston/demo/iotc-relay-server.py https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/main/relay-server/iotc-relay-server.py
+wget -O /home/weston/demo/iotc-relay-server.py https://raw.githubusercontent.com/avnet-iotconnect/iotc-relay-service/main/relay-server/iotc-relay-server.py
 ```
 
 > [!NOTE]
@@ -55,7 +55,7 @@ For Python applications, download the Python client module using this console co
 > other references to it.**
 
 ```
-wget -O /home/weston/demo/iotc_relay_client.py https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/main/client-module/python/iotc_relay_client.py
+wget -O /home/weston/demo/iotc_relay_client.py https://raw.githubusercontent.com/avnet-iotconnect/iotc-relay-service/main/client-module/python/iotc_relay_client.py
 ```
 
 ## C Applications
@@ -67,10 +67,10 @@ For C applications, download the C client module, header file, and Makefile usin
 > application is stored. This makes compilation less complex.
 
 ```
-wget -O <USER APPLICATION DIRECTORY>/iotc_relay_client.c https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/main/client-module/c/iotc_relay_client.c
+wget -O <USER APPLICATION DIRECTORY>/iotc_relay_client.c https://raw.githubusercontent.com/avnet-iotconnect/iotc-relay-service/main/client-module/c/iotc_relay_client.c
 ```
 ```
-wget -O <USER APPLICATION DIRECTORY>/iotc_relay_client.h https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/main/client-module/c/iotc_relay_client.h
+wget -O <USER APPLICATION DIRECTORY>/iotc_relay_client.h https://raw.githubusercontent.com/avnet-iotconnect/iotc-relay-service/main/client-module/c/iotc_relay_client.h
 ```
 
 # 4. Modifications to User Applications
@@ -81,22 +81,22 @@ wget -O <USER APPLICATION DIRECTORY>/iotc_relay_client.h https://raw.githubuserc
 > 
 > Python application that generates random positive integers and selects random color strings:
 > ```
-> wget https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/refs/heads/main/client-app-examples/python/client-example-0.py
+> wget https://raw.githubusercontent.com/avnet-iotconnect/iotc-relay-service/refs/heads/main/client-app-examples/python/client-example-0.py
 > ```
 > 
 > Python application that generates random negative integers and selects random weather strings:
 > ```
-> wget https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/refs/heads/main/client-app-examples/python/client-example-1.py
+> wget https://raw.githubusercontent.com/avnet-iotconnect/iotc-relay-service/refs/heads/main/client-app-examples/python/client-example-1.py
 > ```
 > 
 > C application that generates random positive decimal numbers between 0 and 1 and selects random animal strings:
 > ```
-> wget https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/refs/heads/main/client-app-examples/c/client-example-2.c
+> wget https://raw.githubusercontent.com/avnet-iotconnect/iotc-relay-service/refs/heads/main/client-app-examples/c/client-example-2.c
 > ```
 > 
 > C application that generates random negative decimal numbers between -1 and 0 and selects random name strings:
 > ```
-> wget https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/refs/heads/main/client-app-examples/c/client-example-3.c
+> wget https://raw.githubusercontent.com/avnet-iotconnect/iotc-relay-service/refs/heads/main/client-app-examples/c/client-example-3.c
 > ```
 > 
 > Step 4 walks you through how to create an application like these yourself, so if you downloaded it you can skip to [Step 5](#5-update-device-template).
@@ -618,7 +618,7 @@ Here is an example service file that will work on Linux devices with a `weston` 
 > [!NOTE]
 > Directly download this service file to the correct directory of your device by executing this command:
 > ```
-> sudo wget -O /etc/systemd/system/iotconnect-relay.service https://raw.githubusercontent.com/avnet-iotconnect/iotconnect-relay-service/main/service-file/iotconnect-relay.service
+> sudo wget -O /etc/systemd/system/iotconnect-relay.service https://raw.githubusercontent.com/avnet-iotconnect/iotc-relay-service/main/service-file/iotconnect-relay.service
 > ```
 
 ```
