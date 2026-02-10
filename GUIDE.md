@@ -11,10 +11,13 @@
 
 # 1. Introduction
 
-This guide will walk you through how to enable the /IOTCONNECT Relay Service on a supported device 
-to transmit and receive data to/from any Python or C process via Unix socket. This allows any user 
-to report data from their existing applications to /IOTCONNECT and receive cloud commands from /IOTCONNECT 
+This guide will walk you through how to enable the /IOTCONNECT Relay Service on a supported device
+to transmit and receive data to/from any Python or C process via Unix socket or TCP. This allows any user
+to report data from their existing applications to /IOTCONNECT and receive cloud commands from /IOTCONNECT
 while making minimal modifications.
+
+The relay server listens on both a Unix domain socket and a TCP port (default 8899), so applications
+running inside containers can connect directly via TCP without needing external bridging tools like socat.
 
 This guide also includes working example Python and C applications (to resemble user applications) and detailed 
 instructions on the necessary modifications for connecting it to the /IOTCONNECT service to enable telemetry reporting 
@@ -135,12 +138,12 @@ if __name__ == "__main__":
     main()
 ```
 
-The first addition users need to make is importing the iotc_relay_client 
-module (from the location it was downloaded to), and then adding basic socket config:
+The first addition users need to make is importing the iotc_relay_client
+module (from the location it was downloaded to), and then adding basic connection config:
 
 ```python
 # Add location of relay client module to path
-CLIENT_MODULE_PATH = "/home/weston/demo" 
+CLIENT_MODULE_PATH = "/home/weston/demo"
 sys.path.insert(0, CLIENT_MODULE_PATH)
 
 from iotc_relay_client import IoTConnectRelayClient
@@ -148,6 +151,15 @@ from iotc_relay_client import IoTConnectRelayClient
 SOCKET_PATH = "/tmp/iotconnect-relay.sock"
 CLIENT_ID = "random_data_generator"
 ```
+
+> [!TIP]
+> If your application runs inside a container (e.g., Docker, Arduino App Lab) and cannot access
+> the host's Unix socket, use a TCP connection instead:
+> ```python
+> SOCKET_PATH = "tcp://172.17.0.1:8899"
+> ```
+> Replace the IP and port with the appropriate values for your environment. The default TCP port
+> for the relay server is `8899`.
 
 The next addition is going to be a handler function for acting upon the received cloud commands from the server. A basic 
 version of this could be:
@@ -311,6 +323,12 @@ The first addition users need to make is including the relay client header and a
 #define SOCKET_PATH "/tmp/iotconnect-relay.sock"
 #define CLIENT_ID "c_data_generator"
 ```
+
+> [!TIP]
+> For containerized environments, use a TCP connection instead:
+> ```c
+> #define SOCKET_PATH "tcp://172.17.0.1:8899"
+> ```
 
 The next addition is a handler function for acting upon received cloud commands from the server. A basic version of this 
 could be:
@@ -721,11 +739,16 @@ After the Relay Service has been enabled and started, all that users need to do 
 and transmitted to /IOTCONNECT at the data frequency specified in `iotc-relay-server.py`.
 
 > [!NOTE]
-> If a user needs to change the data frequency of the server, they can do so by modifying the `DATA_FREQUENCY` value in line
-> 18 of the `iotc-relay-server.py`. If the desired data frequency is lower than the value in the /IOTCONNECT device template, the value in the
+> If a user needs to change the data frequency of the server, they can do so by modifying the `DATA_FREQUENCY` value in
+> `iotc-relay-server.py`. If the desired data frequency is lower than the value in the /IOTCONNECT device template, the value in the
 > template must first be lowered. *If the template-editing page shows an alert saying that the desired data frequency is too low, please
 > submit a [support ticket](https://docs.iotconnect.io/iotconnect/user-manuals/support-tickets/) in /IOTCONNECT asking
 > for the data frequency of your template to be changed.*
+
+> [!TIP]
+> The relay server also listens on TCP port `8899` by default, which allows clients running inside
+> containers to connect without needing external bridging tools. To change the TCP port, modify the
+> `TCP_PORT` value in `iotc-relay-server.py`. Set `TCP_PORT = 0` to disable the TCP listener entirely.
 
 Commands sent from /IOTCONNECT will be transmitted from the server to the client app(s) to be handled 
 by the newly-added `handle_cloud_command` function.

@@ -5,6 +5,15 @@ import threading
 
 
 class IoTConnectRelayClient:
+    """Relay client for the Avnet IoTConnect Relay Service.
+
+    If socket_path starts with "tcp://", connects via TCP instead of a Unix socket.
+    Example: socket_path = "tcp://172.17.0.1:8899"
+
+    This is useful when the app runs in a container and cannot access
+    the host's Unix socket at /tmp/iotconnect-relay.sock directly.
+    """
+
     def __init__(self, socket_path, client_id, command_callback=None, reconnect_delay=5):
         self.socket_path = socket_path
         self.client_id = client_id
@@ -45,14 +54,43 @@ class IoTConnectRelayClient:
                 if self.connect():
                     print("Reconnection successful!")
             time.sleep(self.reconnect_delay)
-        
+
+    def _parse_tcp_target(self):
+        """Parse a tcp://host:port target string. Returns (host, port) or None."""
+        if not isinstance(self.socket_path, str) or not self.socket_path.startswith("tcp://"):
+            return None
+
+        target = self.socket_path[len("tcp://"):]
+        # Allow IPv6 in brackets: tcp://[::1]:8899
+        if target.startswith("[") and "]" in target:
+            host = target[1:target.index("]")]
+            rest = target[target.index("]") + 1:]
+            if not rest.startswith(":"):
+                raise ValueError(f"Invalid tcp target: {self.socket_path}")
+            port = int(rest[1:])
+            return (host, port)
+
+        if ":" not in target:
+            raise ValueError(f"Invalid tcp target (missing :port): {self.socket_path}")
+        host, port_str = target.rsplit(":", 1)
+        return (host, int(port_str))
+
     def connect(self):
         try:
-            self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-            self.socket.settimeout(5.0)
-            self.socket.connect(self.socket_path)
+            tcp_target = self._parse_tcp_target()
+
+            if tcp_target is not None:
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.socket.settimeout(5.0)
+                self.socket.connect(tcp_target)
+                print(f"Connected to IoTConnect Relay server via TCP at {tcp_target[0]}:{tcp_target[1]}")
+            else:
+                self.socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+                self.socket.settimeout(5.0)
+                self.socket.connect(self.socket_path)
+                print(f"Connected to IoTConnect Relay server at {self.socket_path}")
+
             self.connected = True
-            print(f"Connected to IoTConnect Relay server at {self.socket_path}")
             
             # Register with the server
             self._send_message({

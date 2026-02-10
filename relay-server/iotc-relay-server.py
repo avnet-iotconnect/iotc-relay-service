@@ -17,49 +17,76 @@ from avnet.iotconnect.sdk.sdklib.mqtt import C2dAck, C2dOta
 
 DATA_FREQUENCY = 5  # Seconds between telemetry transmissions
 SOCKET_PATH = "/tmp/iotconnect-relay.sock"
+TCP_PORT = 8899  # TCP port for containerized/remote clients (set to 0 to disable)
+TCP_BIND_ADDRESS = "0.0.0.0"  # Bind address for TCP listener
 CONFIG_PATH = "/home/weston/demo/iotcDeviceConfig.json"
 CERT_PATH = "/home/weston/demo/device-cert.pem"
 KEY_PATH = "/home/weston/demo/device-pkey.pem"
 
 
 class IoTConnectRelayServer:
-    
-    def __init__(self, socket_path):
+
+    def __init__(self, socket_path, tcp_port=0, tcp_bind_address="0.0.0.0"):
         self.socket_path = socket_path
+        self.tcp_port = tcp_port
+        self.tcp_bind_address = tcp_bind_address
         self.server_socket = None
+        self.tcp_server_socket = None
         self.clients = {}  # Dictionary to track connected clients
         self.clients_lock = threading.Lock()
         self.telemetry_data = {}  # Store latest telemetry from each client
         self.telemetry_lock = threading.Lock()
         self.running = False
-    
+
     def start(self):
-        # Remove old socket file if it exists
+        self.running = True
+
+        # Start Unix socket listener
         if os.path.exists(self.socket_path):
             os.remove(self.socket_path)
-        
+
         self.server_socket = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        
+
         try:
             self.server_socket.bind(self.socket_path)
             self.server_socket.listen(10)
-            self.running = True
             print(f"IoTConnect Relay server listening on {self.socket_path}")
-            
-            # Start accepting connections in a separate thread
-            accept_thread = threading.Thread(target=self._accept_connections, daemon=True)
+
+            accept_thread = threading.Thread(target=self._accept_connections, args=(self.server_socket, "unix"), daemon=True)
             accept_thread.start()
-            
+
         except Exception as e:
-            print(f"Failed to start server: {e}")
+            print(f"Failed to start Unix socket server: {e}")
             self.running = False
-    
-    def _accept_connections(self):
+            return
+
+        # Start TCP listener if configured
+        if self.tcp_port > 0:
+            self.tcp_server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.tcp_server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+
+            try:
+                self.tcp_server_socket.bind((self.tcp_bind_address, self.tcp_port))
+                self.tcp_server_socket.listen(10)
+                print(f"IoTConnect Relay server listening on TCP {self.tcp_bind_address}:{self.tcp_port}")
+
+                tcp_accept_thread = threading.Thread(target=self._accept_connections, args=(self.tcp_server_socket, "tcp"), daemon=True)
+                tcp_accept_thread.start()
+
+            except Exception as e:
+                print(f"Failed to start TCP server: {e}")
+                print("Continuing with Unix socket only.")
+                self.tcp_server_socket = None
+
+    def _accept_connections(self, server_sock, label):
         while self.running:
             try:
-                client_socket, _ = self.server_socket.accept()
-                print(f"Client connected")
-                
+                client_socket, addr = server_sock.accept()
+                if addr:
+                    print(f"Client connected via {label} from {addr}")
+                else:
+                    print(f"Client connected via {label}")
+
                 # Handle client in separate thread
                 client_thread = threading.Thread(
                     target=self._handle_client,
@@ -67,10 +94,10 @@ class IoTConnectRelayServer:
                     daemon=True
                 )
                 client_thread.start()
-                
+
             except Exception as e:
                 if self.running:
-                    print(f"Error accepting connection: {e}")
+                    print(f"Error accepting {label} connection: {e}")
     
     def _handle_client(self, client_socket):
         buffer = ""
@@ -215,7 +242,7 @@ class IoTConnectRelayServer:
     
     def stop(self):
         self.running = False
-        
+
         # Close all client connections
         with self.clients_lock:
             for client_socket in self.clients.values():
@@ -224,15 +251,21 @@ class IoTConnectRelayServer:
                 except:
                     pass
             self.clients.clear()
-        
-        # Close server socket
+
+        # Close server sockets
         if self.server_socket:
             try:
                 self.server_socket.close()
             except:
                 pass
-        
-        # Remove socket file
+
+        if self.tcp_server_socket:
+            try:
+                self.tcp_server_socket.close()
+            except:
+                pass
+
+        # Remove Unix socket file
         if os.path.exists(self.socket_path):
             try:
                 os.remove(self.socket_path)
@@ -370,8 +403,8 @@ c = None
 server = None
 
 try:
-    # Start the Unix socket server for IoTConnect Relay
-    server = IoTConnectRelayServer(SOCKET_PATH)
+    # Start the relay server (Unix socket + optional TCP listener)
+    server = IoTConnectRelayServer(SOCKET_PATH, tcp_port=TCP_PORT, tcp_bind_address=TCP_BIND_ADDRESS)
     server.start()
     
     # Give the server a moment to initialize

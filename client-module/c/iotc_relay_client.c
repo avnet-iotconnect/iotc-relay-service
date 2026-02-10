@@ -13,6 +13,9 @@
 #include <pthread.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 #include <errno.h>
 
 /* JSON parsing helpers */
@@ -197,31 +200,99 @@ const char *iotc_relay_error_string(int error)
     }
 }
 
-static int connect_to_server(IotcRelayClient *client)
+/**
+ * Parse a "tcp://host:port" string.
+ * Returns 1 on success (host and port filled in), 0 if not a tcp:// path.
+ */
+static int parse_tcp_target(const char *path, char *host, size_t host_len, int *port)
 {
-    struct sockaddr_un addr;
-    char *reg_msg;
+    const char *prefix = "tcp://";
+    const char *start;
+    const char *colon;
 
-    client->sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (client->sockfd < 0) {
-        return IOTC_RELAY_ERROR_SOCKET;
+    if (strncmp(path, prefix, strlen(prefix)) != 0) {
+        return 0;
     }
 
-    memset(&addr, 0, sizeof(addr));
-    addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, client->socket_path, sizeof(addr.sun_path) - 1);
+    start = path + strlen(prefix);
+    colon = strrchr(start, ':');
+    if (!colon || colon == start) {
+        return 0;
+    }
 
-    if (connect(client->sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-        close(client->sockfd);
-        client->sockfd = -1;
-        return IOTC_RELAY_ERROR_CONNECT;
+    size_t hlen = (size_t)(colon - start);
+    if (hlen >= host_len) {
+        hlen = host_len - 1;
+    }
+    strncpy(host, start, hlen);
+    host[hlen] = '\0';
+    *port = atoi(colon + 1);
+
+    return 1;
+}
+
+static int connect_to_server(IotcRelayClient *client)
+{
+    char *reg_msg;
+    char host[256];
+    int port;
+
+    if (parse_tcp_target(client->socket_path, host, sizeof(host), &port)) {
+        /* TCP connection */
+        struct sockaddr_in tcp_addr;
+
+        client->sockfd = socket(AF_INET, SOCK_STREAM, 0);
+        if (client->sockfd < 0) {
+            return IOTC_RELAY_ERROR_SOCKET;
+        }
+
+        memset(&tcp_addr, 0, sizeof(tcp_addr));
+        tcp_addr.sin_family = AF_INET;
+        tcp_addr.sin_port = htons((uint16_t)port);
+
+        if (inet_pton(AF_INET, host, &tcp_addr.sin_addr) <= 0) {
+            /* Try resolving as hostname */
+            struct hostent *he = gethostbyname(host);
+            if (!he) {
+                close(client->sockfd);
+                client->sockfd = -1;
+                return IOTC_RELAY_ERROR_CONNECT;
+            }
+            memcpy(&tcp_addr.sin_addr, he->h_addr_list[0], (size_t)he->h_length);
+        }
+
+        if (connect(client->sockfd, (struct sockaddr *)&tcp_addr, sizeof(tcp_addr)) < 0) {
+            close(client->sockfd);
+            client->sockfd = -1;
+            return IOTC_RELAY_ERROR_CONNECT;
+        }
+
+        printf("Connected to IoTConnect Relay server via TCP at %s:%d\n", host, port);
+    } else {
+        /* Unix socket connection */
+        struct sockaddr_un addr;
+
+        client->sockfd = socket(AF_UNIX, SOCK_STREAM, 0);
+        if (client->sockfd < 0) {
+            return IOTC_RELAY_ERROR_SOCKET;
+        }
+
+        memset(&addr, 0, sizeof(addr));
+        addr.sun_family = AF_UNIX;
+        strncpy(addr.sun_path, client->socket_path, sizeof(addr.sun_path) - 1);
+
+        if (connect(client->sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+            close(client->sockfd);
+            client->sockfd = -1;
+            return IOTC_RELAY_ERROR_CONNECT;
+        }
+
+        printf("Connected to IoTConnect Relay server at %s\n", client->socket_path);
     }
 
     pthread_mutex_lock(&client->lock);
     client->is_connected = true;
     pthread_mutex_unlock(&client->lock);
-
-    printf("Connected to IoTConnect Relay server at %s\n", client->socket_path);
 
     reg_msg = create_json_register(client->client_id);
     if (reg_msg) {
