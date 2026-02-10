@@ -1,8 +1,7 @@
 /*
  * SPDX-License-Identifier: MIT
- * Copyright (C) 2024 Avnet
- * 
- * IoTConnect Relay Client - C Library Implementation
+ * Copyright (C) 2026 Avnet
+ * Authors: Nikola Markovic <nikola.markovic@avnet.com> and Zackary Andraka <zackary.andraka@avnet.com> et al.
  */
 
 #include "iotc_relay_client.h"

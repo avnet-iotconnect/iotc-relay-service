@@ -1,14 +1,7 @@
 /*
  * SPDX-License-Identifier: MIT
- * Copyright (C) 2024 Avnet
- * 
- * IoTConnect Relay Client - C Library
- *
- * A client library for connecting C applications to the IoTConnect Relay
- * server via Unix domain sockets or TCP.
- *
- * If socket_path starts with "tcp://", connects via TCP instead.
- * Example: "tcp://172.17.0.1:8899"
+ * Copyright (C) 2026 Avnet
+ * Authors: Nikola Markovic <nikola.markovic@avnet.com> and Zackary Andraka <zackary.andraka@avnet.com> et al.
  */
 
 #ifndef IOTC_RELAY_CLIENT_H
