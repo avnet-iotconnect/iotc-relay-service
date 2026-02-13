@@ -37,14 +37,14 @@ This will walk users through how to set up hardware, configure the software, and
 
 # 3. Download the /IOTCONNECT Relay Server and Client Code
 
-First download the /IOTCONNECT Relay Server application using this commands in the console:
+First download the /IOTCONNECT Relay Server application using these commands in the console:
 
 ```
 wget -O /opt/demo/iotc-relay-server.py https://raw.githubusercontent.com/avnet-iotconnect/iotc-relay-service/main/relay-server/iotc-relay-server.py
 ```
 
 > [!NOTE]
-> This same Python server script will be used regardless of if the customer application is Python-based or not. Using 
+> This same Python server script will be used regardless of whether the customer application is Python-based or not. Using 
 > Unix sockets allows it to communicate with both Python and C programs.
 
 Next, download the appropriate client module code for your application(s).
@@ -557,7 +557,7 @@ leave the Authentication Type and Device Message Version on their default values
 In the resulting page, you can add your data attributes, cloud commands, and adjust your data frequency.
 
 If your Data Frequency is not set to 5 by default, it is recommended to change it to 5 since that is the frequency that 
-the Handoff application expects by default.
+the Relay application expects by default.
 
 > [!NOTE]
 > If the /IOTCONNECT UI says you cannot set the Data Frequency as low as you would like, submit a support ticket (bottom 
