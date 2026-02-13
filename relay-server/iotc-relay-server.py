@@ -19,9 +19,9 @@ DATA_FREQUENCY = 5  # Seconds between telemetry transmissions
 SOCKET_PATH = "/tmp/iotconnect-relay.sock"
 TCP_PORT = 8899  # TCP port for containerized/remote clients (set to 0 to disable)
 TCP_BIND_ADDRESS = "0.0.0.0"  # Bind address for TCP listener
-CONFIG_PATH = "/home/weston/demo/iotcDeviceConfig.json"
-CERT_PATH = "/home/weston/demo/device-cert.pem"
-KEY_PATH = "/home/weston/demo/device-pkey.pem"
+CONFIG_PATH = "/opt/demo/iotcDeviceConfig.json"
+CERT_PATH = "/opt/demo/device-cert.pem"
+KEY_PATH = "/opt/demo/device-pkey.pem"
 
 
 class IoTConnectRelayServer:

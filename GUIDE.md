@@ -40,7 +40,7 @@ This will walk users through how to set up hardware, configure the software, and
 First download the /IOTCONNECT Relay Server application using this commands in the console:
 
 ```
-wget -O /home/weston/demo/iotc-relay-server.py https://raw.githubusercontent.com/avnet-iotconnect/iotc-relay-service/main/relay-server/iotc-relay-server.py
+wget -O /opt/demo/iotc-relay-server.py https://raw.githubusercontent.com/avnet-iotconnect/iotc-relay-service/main/relay-server/iotc-relay-server.py
 ```
 
 > [!NOTE]
@@ -58,7 +58,7 @@ For Python applications, download the Python client module using this console co
 > other references to it.**
 
 ```
-wget -O /home/weston/demo/iotc_relay_client.py https://raw.githubusercontent.com/avnet-iotconnect/iotc-relay-service/main/client-module/python/iotc_relay_client.py
+wget -O /opt/demo/iotc_relay_client.py https://raw.githubusercontent.com/avnet-iotconnect/iotc-relay-service/main/client-module/python/iotc_relay_client.py
 ```
 
 ## C Applications
@@ -143,7 +143,7 @@ module (from the location it was downloaded to), and then adding basic connectio
 
 ```python
 # Add location of relay client module to path
-CLIENT_MODULE_PATH = "/home/weston/demo"
+CLIENT_MODULE_PATH = "/opt/demo"
 sys.path.insert(0, CLIENT_MODULE_PATH)
 
 from iotc_relay_client import IoTConnectRelayClient
@@ -218,7 +218,7 @@ import random
 import sys
 
 # Add location of relay client module to path
-CLIENT_MODULE_PATH = "/home/weston/demo" 
+CLIENT_MODULE_PATH = "/opt/demo" 
 sys.path.insert(0, CLIENT_MODULE_PATH)
 
 from iotc_relay_client import IoTConnectRelayClient
@@ -630,8 +630,8 @@ template will instantly be assigned to your device.
 To have the iotc-relay-server.py run on boot in the background as a service, first users need to 
 create a service file called `iotconnect-relay.service` in the directory `/etc/systemd/system/`.
 
-Here is an example service file that will work on Linux devices with a `weston` user and have 
-`iotc-relay-server.py` in the `/home/weston/demo` directory:
+Here is an example service file that will work on Linux devices with
+`iotc-relay-server.py` in the `/opt/demo` directory:
 
 > [!NOTE]
 > Directly download this service file to the correct directory of your device by executing this command:
@@ -646,9 +646,9 @@ After=network.target
 
 [Service]
 Type=simple
-User=weston
-WorkingDirectory=/home/weston/demo
-ExecStart=/usr/bin/python3 /home/weston/demo/iotc-relay-server.py
+User=<your-user>
+WorkingDirectory=/opt/demo
+ExecStart=/usr/bin/python3 /opt/demo/iotc-relay-server.py
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal
@@ -661,23 +661,30 @@ Environment="PYTHONUNBUFFERED=1"
 WantedBy=multi-user.target
 ```
 > [!IMPORTANT]
-> Make sure to modify the `User` field to a valid non-root user on your device, and to modify the
-> working directory and exec start fields to the directory where iotc-relay-server.py is located
-> on your device.
+> Make sure to replace `<your-user>` in the `User` field with a valid non-root user on your device,
+> and to modify the working directory and exec start fields to the directory where iotc-relay-server.py
+> is located on your device.
+>
+> It is recommended to **not** use `root` as the user for the service to avoid permissions errors
+> in the socket system when running a client as a non-root user.
+>
+> If your device does not already have a non-root user, you can create one with the following commands:
+> ```
+> sudo useradd -m -s /bin/bash iotc
+> sudo usermod -aG sudo iotc
+> ```
+> This creates a user called `iotc` with a home directory and adds it to the `sudo` group.
+> You can replace `iotc` with any username you prefer.
 >
 > You will need to give your user ownership of the /IOTCONNECT config file and certificates if you
 > were logged in as `root` during the initial QuickStart. Do so with this command (modify `<user>` and `<group>`):
 > ```
-> sudo chown <user>:<group> /home/weston/demo/device-cert.pem /home/weston/demo/device-pkey.pem /home/weston/demo/iotcDeviceConfig.json
+> sudo chown <user>:<group> /opt/demo/device-cert.pem /opt/demo/device-pkey.pem /opt/demo/iotcDeviceConfig.json
 > ```
-> For example on a device that uses a `weston` user in the `weston` group, use this command:
+> For example on a device that uses an `iotc` user in the `iotc` group, use this command:
 > ```
-> sudo chown weston:weston /home/weston/demo/device-cert.pem /home/weston/demo/device-pkey.pem /home/weston/demo/iotcDeviceConfig.json
+> sudo chown iotc:iotc /opt/demo/device-cert.pem /opt/demo/device-pkey.pem /opt/demo/iotcDeviceConfig.json
 > ```
-
-> [!TIP]
-> It is recommended to not use `root` as the user for the service to avoid any permissions errors
-> in the socket system when running a client as a non-root user.
 
 After the service file has been written, execute these commands to enable and start the service:
 

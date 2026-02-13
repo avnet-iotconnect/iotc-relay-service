@@ -7,7 +7,7 @@ import random
 import sys
 
 # Add location of relay client module to path
-CLIENT_MODULE_PATH = "/home/weston/demo" 
+CLIENT_MODULE_PATH = "/opt/demo" 
 sys.path.insert(0, CLIENT_MODULE_PATH)
 
 from iotc_relay_client import IoTConnectRelayClient

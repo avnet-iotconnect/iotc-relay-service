@@ -4,9 +4,9 @@ After=network.target
 
 [Service]
 Type=simple
-User=weston
-WorkingDirectory=/home/weston/demo
-ExecStart=/usr/bin/python3 /home/weston/demo/iotc-relay-server.py
+User=<your-user>
+WorkingDirectory=/opt/demo
+ExecStart=/usr/bin/python3 /opt/demo/iotc-relay-server.py
 Restart=on-failure
 RestartSec=10
 StandardOutput=journal
